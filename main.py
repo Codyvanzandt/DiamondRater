@@ -12,7 +12,7 @@ st.title("Diamond Rating App")
 conn = st.connection('gcs', type=FilesConnection)
 
 # GCS bucket name
-BUCKET_NAME = "your-gcs-bucket-name"
+BUCKET_NAME = "vanzandt-streamlit-bucket"
 
 
 # Function to load json data from GCS
