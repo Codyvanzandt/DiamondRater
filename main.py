@@ -14,15 +14,18 @@ conn = st.connection('gcs', type=FilesConnection)
 # GCS bucket name
 BUCKET_NAME = "vanzandt-streamlit-bucket"
 
+
 # Function to load json data from GCS
 def load_json(file_path):
     content = conn.read(file_path, ttl=600)
     return json.loads(content)
 
+
 # Function to save json data to GCS
 def save_json(data, file_path):
     json_string = json.dumps(data)
     conn.fs.write_text(file_path, json_string)
+
 
 # Function to get unrated diamonds
 def get_unrated_diamonds(rated_diamonds):
@@ -30,6 +33,7 @@ def get_unrated_diamonds(rated_diamonds):
                      for file_name in conn.fs.listdir(f"{BUCKET_NAME}/images")
                      if file_name.endswith('.jpg'))
     return list(all_images - set(rated_diamonds))
+
 
 # Function to save ratings
 def save_ratings(ratings, output_file):
@@ -74,10 +78,14 @@ except:
 # Load existing ratings or create a new dataframe
 try:
     ratings_df = conn.read(f"{BUCKET_NAME}/{output_file}", input_format="csv", ttl=600)
-except:
-    sample_json_file = conn.fs.listdir(f"{BUCKET_NAME}/info")[0]
-    sample_json = load_json(sample_json_file)
-    ratings_df = pd.DataFrame(columns=['product_number', 'rating'] + ['json_' + key for key in sample_json.keys()])
+except FileNotFoundError:
+    sample_json_files = conn.fs.listdir(f"{BUCKET_NAME}/info")
+    if sample_json_files:
+        sample_json_file = sample_json_files[0]
+        sample_json = load_json(f"{BUCKET_NAME}/info/{sample_json_file}")
+        ratings_df = pd.DataFrame(columns=['product_number', 'rating'] + ['json_' + key for key in sample_json.keys()])
+    else:
+        ratings_df = pd.DataFrame(columns=['product_number', 'rating'])
 
 # Get unrated diamonds
 unrated_diamonds = get_unrated_diamonds(rated_diamonds)
