@@ -76,16 +76,7 @@ except:
     rated_diamonds = []
 
 # Load existing ratings or create a new dataframe
-try:
-    ratings_df = conn.read(f"{BUCKET_NAME}/{output_file}", input_format="csv", ttl=600)
-except FileNotFoundError:
-    sample_json_files = conn.fs.listdir(f"{BUCKET_NAME}/info")
-    if sample_json_files:
-        sample_json_file = sample_json_files[0]
-        sample_json = load_json(f"{BUCKET_NAME}/info/{sample_json_file}")
-        ratings_df = pd.DataFrame(columns=['product_number', 'rating'] + ['json_' + key for key in sample_json.keys()])
-    else:
-        ratings_df = pd.DataFrame(columns=['product_number', 'rating'])
+ratings_df = conn.read(f"{BUCKET_NAME}/{output_file}", input_format="csv", ttl=600)
 
 # Get unrated diamonds
 unrated_diamonds = get_unrated_diamonds(rated_diamonds)
@@ -95,7 +86,7 @@ if unrated_diamonds:
     current_diamond = unrated_diamonds[0]
 
     # Display the image
-    image_content = conn.read(f"{BUCKET_NAME}/images/diamond_image_{current_diamond}.jpg", input_format="raw", ttl=600)
+    image_content = conn.read(f"{BUCKET_NAME}/images/diamond_image_{current_diamond}.jpg", ttl=600)
     image = Image.open(io.BytesIO(image_content))
     st.image(image, caption=f"Diamond {current_diamond}", use_column_width=True)
 
