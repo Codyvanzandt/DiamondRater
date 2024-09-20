@@ -17,11 +17,17 @@ BUCKET_NAME = "vanzandt-streamlit-bucket"
 
 # Function to load json data from GCS
 def load_json(file_path):
-    content = conn.read(file_path, ttl=600)
-    return json.loads(content)
+    content = conn.read(file_path, input_format="json", ttl=600)
+    # If content is already a dict, return it directly
+    if isinstance(content, dict):
+        return content
+    # If it's a string, parse it
+    elif isinstance(content, str):
+        return json.loads(content)
+    else:
+        raise ValueError(f"Unexpected content type: {type(content)}")
 
 
-# Function to save json data to GCS
 def save_json(data, file_path):
     json_string = json.dumps(data)
     conn.fs.write_text(file_path, json_string)
@@ -42,20 +48,19 @@ def get_unrated_diamonds(rated_diamonds):
     return list(all_images - set(rated_diamonds))
 
 
-# Function to save ratings
 def save_ratings(ratings, output_file):
     csv_string = ratings.to_csv(index=False)
     conn.fs.write_text(f"{BUCKET_NAME}/{output_file}", csv_string)
 
 
-# Function to handle rating submission
 def submit_rating(diamond, rating):
     # Load json data
     json_data = load_json(f"{BUCKET_NAME}/info/diamond_info_{diamond}.json")
 
     # Prepare the new row
     new_row = pd.DataFrame(
-        {'product_number': [diamond], 'rating': [rating], **{f'json_{k}': [v] for k, v in json_data.items()}})
+        {'product_number': [diamond], 'rating': [rating], **{f'json_{k}': [v] for k, v in json_data.items()}}
+    )
 
     # Add the new row to the dataframe
     global ratings_df
@@ -66,7 +71,7 @@ def submit_rating(diamond, rating):
 
     # Update rated diamonds list and save to JSON
     rated_diamonds.append(diamond)
-    save_json(rated_diamonds, state_file)
+    save_json(rated_diamonds, f"{BUCKET_NAME}/{state_file}")
 
     st.success(f"Rating of {rating} for Diamond {diamond} saved successfully!")
     st.rerun()
