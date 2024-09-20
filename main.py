@@ -14,18 +14,15 @@ conn = st.connection('gcs', type=FilesConnection)
 # GCS bucket name
 BUCKET_NAME = "vanzandt-streamlit-bucket"
 
-
 # Function to load json data from GCS
 def load_json(file_path):
-    content = conn.read(file_path, input_format="raw", ttl=600)
-    return json.loads(content.decode('utf-8'))
-
+    content = conn.read(file_path, ttl=600)
+    return json.loads(content)
 
 # Function to save json data to GCS
 def save_json(data, file_path):
     json_string = json.dumps(data)
     conn.fs.write_text(file_path, json_string)
-
 
 # Function to get unrated diamonds
 def get_unrated_diamonds(rated_diamonds):
@@ -33,7 +30,6 @@ def get_unrated_diamonds(rated_diamonds):
                      for file_name in conn.fs.listdir(f"{BUCKET_NAME}/images")
                      if file_name.endswith('.jpg'))
     return list(all_images - set(rated_diamonds))
-
 
 # Function to save ratings
 def save_ratings(ratings, output_file):
