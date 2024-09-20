@@ -29,9 +29,16 @@ def save_json(data, file_path):
 
 # Function to get unrated diamonds
 def get_unrated_diamonds(rated_diamonds):
-    all_images = set(file_name.split('/')[-1].split('.')[0].split('_')[-1]
-                     for file_name in conn.fs.listdir(f"{BUCKET_NAME}/images")
-                     if file_name.endswith('.jpg'))
+    all_images = set()
+    blobs = conn.fs.listdir(f"{BUCKET_NAME}/images")
+
+    for blob in blobs:
+        if isinstance(blob, dict) and 'name' in blob:
+            file_name = blob['name']
+            if file_name.endswith('.jpg'):
+                image_id = file_name.split('/')[-1].split('.')[0].split('_')[-1]
+                all_images.add(image_id)
+
     return list(all_images - set(rated_diamonds))
 
 
