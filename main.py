@@ -92,10 +92,14 @@ if unrated_diamonds:
     # Select a random unrated diamond
     current_diamond = unrated_diamonds[0]
 
-    # Display the image
-    image_content = conn.read(f"{BUCKET_NAME}/images/diamond_image_{current_diamond}.jpg", ttl=600)
-    image = Image.open(io.BytesIO(image_content))
-    st.image(image, caption=f"Diamond {current_diamond}", use_column_width=True)
+    # Get and display the image
+    image_path = f"{BUCKET_NAME}/images/diamond_image_{current_diamond}.jpg"
+    try:
+        image_content = conn.fs.read(image_path)
+        image = Image.open(io.BytesIO(image_content))
+        st.image(image, caption=f"Diamond {current_diamond}", use_column_width=True)
+    except Exception as e:
+        st.error(f"Error loading image: {str(e)}")
 
     # Create rating buttons
     st.write("Rate this diamond:")
