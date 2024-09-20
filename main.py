@@ -95,7 +95,8 @@ if unrated_diamonds:
     # Get and display the image
     image_path = f"{BUCKET_NAME}/images/diamond_image_{current_diamond}.jpg"
     try:
-        image_content = conn.fs.read(image_path)
+        with conn.open(image_path, mode="rb") as file:
+            image_content = file.read()
         image = Image.open(io.BytesIO(image_content))
         st.image(image, caption=f"Diamond {current_diamond}", use_column_width=True)
     except Exception as e:
