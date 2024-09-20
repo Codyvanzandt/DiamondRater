@@ -12,38 +12,39 @@ st.title("Diamond Rating App")
 conn = st.connection('gcs', type=FilesConnection)
 
 # GCS bucket name
-BUCKET_NAME = "vanzandt-streamlit-bucket"
+BUCKET_NAME = "your-gcs-bucket-name"
 
 
 # Function to load json data from GCS
 def load_json(file_path):
-    content = conn.read(f"{BUCKET_NAME}/{file_path}", input_format="raw", ttl=600)
+    content = conn.read(file_path, input_format="raw", ttl=600)
     return json.loads(content.decode('utf-8'))
 
 
 # Function to save json data to GCS
 def save_json(data, file_path):
     json_string = json.dumps(data)
-    conn.write(f"{BUCKET_NAME}/{file_path}", json_string, output_format="raw")
+    conn.fs.write_text(file_path, json_string)
 
 
 # Function to get unrated diamonds
 def get_unrated_diamonds(rated_diamonds):
     all_images = set(file_name.split('/')[-1].split('.')[0].split('_')[-1]
-                     for file_name in conn.list(f"{BUCKET_NAME}/images")
+                     for file_name in conn.fs.listdir(f"{BUCKET_NAME}/images")
                      if file_name.endswith('.jpg'))
     return list(all_images - set(rated_diamonds))
 
 
 # Function to save ratings
 def save_ratings(ratings, output_file):
-    conn.write(f"{BUCKET_NAME}/{output_file}", ratings.to_csv(index=False), output_format="raw")
+    csv_string = ratings.to_csv(index=False)
+    conn.fs.write_text(f"{BUCKET_NAME}/{output_file}", csv_string)
 
 
 # Function to handle rating submission
 def submit_rating(diamond, rating):
     # Load json data
-    json_data = load_json(f"info/diamond_info_{diamond}.json")
+    json_data = load_json(f"{BUCKET_NAME}/info/diamond_info_{diamond}.json")
 
     # Prepare the new row
     new_row = pd.DataFrame(
@@ -78,7 +79,8 @@ except:
 try:
     ratings_df = conn.read(f"{BUCKET_NAME}/{output_file}", input_format="csv", ttl=600)
 except:
-    sample_json = load_json(conn.list(f"{BUCKET_NAME}/info")[0])
+    sample_json_file = conn.fs.listdir(f"{BUCKET_NAME}/info")[0]
+    sample_json = load_json(sample_json_file)
     ratings_df = pd.DataFrame(columns=['product_number', 'rating'] + ['json_' + key for key in sample_json.keys()])
 
 # Get unrated diamonds
